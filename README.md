@@ -199,34 +199,7 @@ Thu thập dữ liệu sau khi được phép; chia train/val/test theo người
 
 Các cải tiến tiếp theo có thể gồm crop người, lấy cửa sổ thời gian, cache CLS để tăng tốc backbone đóng băng, và lưu pseudo-label bằng manifest để tiết kiệm RAM.
 
-## 9. Chuẩn bị nộp GitHub
-
-Repository nộp bài: [Hming6789/CA-TCC-DINOv3-Fitness](https://github.com/Hming6789/CA-TCC-DINOv3-Fitness). Mã nguồn ban đầu lấy từ `https://github.com/emadeldeen24/CA-TCC.git`; giữ địa chỉ tác giả dưới tên remote `upstream` và dùng `origin` cho repository cá nhân.
-
-Kiểm tra nội dung rồi thêm đúng các file của thay đổi này:
-
-```powershell
-git status --short
-git diff --stat
-git diff --check
-git add README.md docs/README_upstream.md .gitignore .gitattributes requirements-dinov3.txt models/model.py models/dinov3.py models/TC.py config_files/FitnessVideo_Configs.py dataloader/dataloader.py dataloader/augmentations.py dataloader/video.py trainer/trainer.py main.py utils.py predict_video.py smoke_test_dinov3_catcc.py reports/smoke_gpu.json reports/smoke_cpu.json
-git diff --cached --stat
-git commit -m "Integrate frozen DINOv3 backbone with CA-TCC video pipeline"
-```
-
-Nếu làm lại từ một checkout ban đầu mà `origin` vẫn trỏ đến tác giả, cấu hình remote như sau:
-
-```powershell
-git remote rename origin upstream
-git remote add origin https://github.com/Hming6789/CA-TCC-DINOv3-Fitness.git
-git push -u origin HEAD
-```
-
-Nếu checkout đã có `upstream`/`origin` cá nhân, kiểm tra `git remote -v` trước, không thêm trùng. Chỉ push sau khi `origin` trỏ đến repository cá nhân.
-
-`.gitignore` loại checkpoint lớn, dữ liệu/video, token, .env, cache và log. Tệp `test_dinov3.py` có sẵn không nằm trong lệnh stage trên; có thể thêm riêng sau khi bạn kiểm tra. Giữ citation và điều kiện sử dụng của mã nguồn/model gốc; không đưa checkpoint pretrained vào GitHub.
-
-## 10. Nguồn gốc
+## 9. Nguồn gốc
 
 - [CA-TCC — mã nguồn gốc](https://github.com/emadeldeen24/CA-TCC).
 - [Bài báo CA-TCC](https://arxiv.org/abs/2208.06616).
