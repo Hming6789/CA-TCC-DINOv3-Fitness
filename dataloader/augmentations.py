@@ -38,8 +38,10 @@ def permutation(x, max_segments=5, seg_mode="random"):
                 splits = np.split(orig_steps, split_points)
             else:
                 splits = np.array_split(orig_steps, num_segs[i])
-            warp = np.concatenate(np.random.permutation(splits)).ravel()
-            ret[i] = pat[0, warp]
+            # MODIFIED: NumPy mới không nhận danh sách đoạn có độ dài khác nhau.
+            order = np.random.permutation(len(splits))
+            warp = np.concatenate([splits[j] for j in order]).ravel()
+            ret[i] = pat[:, warp]
         else:
             ret[i] = pat
     return torch.from_numpy(ret)

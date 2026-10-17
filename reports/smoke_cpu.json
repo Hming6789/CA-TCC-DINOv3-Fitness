@@ -1,0 +1,49 @@
+{
+  "synthetic_only": true,
+  "python": "3.10.22",
+  "environment": "catcc-dinov3",
+  "torch": "2.9.1+cu126",
+  "device": "cpu",
+  "device_name": "CPU",
+  "image_features": [
+    1,
+    384
+  ],
+  "preprocessing_uint8_float": "passed",
+  "video_features": [
+    2,
+    18,
+    384
+  ],
+  "temporal_features": [
+    2,
+    128,
+    18
+  ],
+  "logits": [
+    2,
+    3
+  ],
+  "trainer_modes": [
+    "self_supervised",
+    "SupCon",
+    "supervised"
+  ],
+  "gradients": "passed",
+  "frozen_backbone": "passed",
+  "evaluation": "passed",
+  "max_frame_chunk": 2,
+  "original_backbone": {
+    "logits": [
+      2,
+      6
+    ],
+    "features": [
+      2,
+      128,
+      18
+    ],
+    "backward": "passed"
+  },
+  "status": "passed"
+}

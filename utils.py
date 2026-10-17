@@ -115,3 +115,7 @@ def copy_Files(destination, data_type):
     copy(f"models/model.py", os.path.join(destination_dir, f"model.py"))
     copy("models/loss.py", os.path.join(destination_dir, "loss.py"))
     copy("models/TC.py", os.path.join(destination_dir, "TC.py"))
+    # NEW: Lưu cả module mới để đối chiếu thí nghiệm DINOv3.
+    copy("models/dinov3.py", os.path.join(destination_dir, "dinov3.py"))
+    copy("dataloader/video.py", os.path.join(destination_dir, "video.py"))
+    copy("config_files/HAR_Configs.py", os.path.join(destination_dir, "HAR_Configs.py"))

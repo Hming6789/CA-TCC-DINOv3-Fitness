@@ -1,0 +1,2 @@
+# NEW: Các file gốc có cả LF/CRLF; không coi CR của Windows là khoảng trắng thừa.
+* whitespace=cr-at-eol

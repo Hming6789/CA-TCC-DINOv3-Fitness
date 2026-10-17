@@ -11,6 +11,13 @@ import torch.nn.functional as F
 from models.loss import NTXentLoss, SupConLoss
 
 
+def prepare_input(model, data, device):
+    # NEW: Video ở CPU; backbone chỉ đưa từng nhóm frame lên GPU, tránh giữ cả hai view.
+    if getattr(model, "backbone_type", "original") == "dinov3":
+        return data
+    return data.float().to(device)
+
+
 def Trainer(model, temporal_contr_model, model_optimizer, temp_cont_optimizer, train_dl, valid_dl, test_dl, device,
             logger, config, experiment_log_dir, training_mode):
     # Start training
@@ -35,7 +42,14 @@ def Trainer(model, temporal_contr_model, model_optimizer, temp_cont_optimizer, t
     # save the model after training ...
     os.makedirs(os.path.join(experiment_log_dir, "saved_models"), exist_ok=True)
     chkpoint = {'model_state_dict': model.state_dict(),
-                'temporal_contr_model_state_dict': temporal_contr_model.state_dict()}
+                'temporal_contr_model_state_dict': temporal_contr_model.state_dict(),
+                'training_mode': training_mode}
+    if getattr(model, "backbone_type", "original") == "dinov3":
+        # NEW: Lưu cấu hình cần thiết để dự đoán đúng kích thước và thứ tự lớp.
+        fields = ("dinov3_model_id", "freeze_dinov3", "frame_batch_size", "num_frames",
+                  "frame_size", "features_len", "final_out_channels", "num_classes",
+                  "class_names", "dropout")
+        chkpoint["video_config"] = {key: getattr(config, key) for key in fields}
     torch.save(chkpoint, os.path.join(experiment_log_dir, "saved_models", f'ckp_last.pt'))
 
     if (training_mode != "self_supervised") and (training_mode != "SupCon"):
@@ -56,14 +70,14 @@ def model_train(model, temporal_contr_model, model_optimizer, temp_cont_optimize
 
     for batch_idx, (data, labels, aug1, aug2) in enumerate(train_loader):
         # send to device
-        data, labels = data.float().to(device), labels.long().to(device)
-        aug1, aug2 = aug1.float().to(device), aug2.float().to(device)
+        labels = labels.long().to(device)
 
         # optimizer
         model_optimizer.zero_grad()
         temp_cont_optimizer.zero_grad()
 
         if training_mode == "self_supervised" or training_mode == "SupCon":
+            aug1, aug2 = prepare_input(model, aug1, device), prepare_input(model, aug2, device)
             predictions1, features1 = model(aug1)
             predictions2, features2 = model(aug2)
 
@@ -78,7 +92,7 @@ def model_train(model, temporal_contr_model, model_optimizer, temp_cont_optimize
         if training_mode == "self_supervised":
             lambda1 = 1
             lambda2 = 0.7
-            nt_xent_criterion = NTXentLoss(device, config.batch_size, config.Context_Cont.temperature,
+            nt_xent_criterion = NTXentLoss(device, features1.shape[0], config.Context_Cont.temperature,
                                            config.Context_Cont.use_cosine_similarity)
             loss = (temp_cont_loss1 + temp_cont_loss2) * lambda1 + \
                    nt_xent_criterion(temp_cont_feat1, temp_cont_feat2) * lambda2
@@ -94,7 +108,7 @@ def model_train(model, temporal_contr_model, model_optimizer, temp_cont_optimize
                                                                                              labels) * lambda2
 
         else:
-            output = model(data)
+            output = model(prepare_input(model, data, device))
             predictions, features = output
             loss = criterion(predictions, labels)
             total_acc.append(labels.eq(predictions.detach().argmax(dim=1)).float().mean())
@@ -126,7 +140,7 @@ def model_evaluate(model, temporal_contr_model, test_dl, device, training_mode):
 
     with torch.no_grad():
         for data, labels, _, _ in test_dl:
-            data, labels = data.float().to(device), labels.long().to(device)
+            data, labels = prepare_input(model, data, device), labels.long().to(device)
 
             if (training_mode == "self_supervised") or (training_mode == "SupCon"):
                 pass
@@ -157,7 +171,6 @@ def model_evaluate(model, temporal_contr_model, test_dl, device, training_mode):
 
 
 def gen_pseudo_labels(model, dataloader, device, experiment_log_dir):
-    from sklearn.metrics import accuracy_score
     model.eval()
     softmax = nn.Softmax(dim=1)
 
@@ -168,7 +181,7 @@ def gen_pseudo_labels(model, dataloader, device, experiment_log_dir):
 
     with torch.no_grad():
         for data, labels, _, _ in dataloader:
-            data = data.float().to(device)
+            data = prepare_input(model, data, device)
             labels = labels.view((-1)).long().to(device)
 
             # forward pass
@@ -179,7 +192,7 @@ def gen_pseudo_labels(model, dataloader, device, experiment_log_dir):
             all_pseudo_labels = np.append(all_pseudo_labels, pseudo_labels.cpu().numpy())
 
             all_labels = np.append(all_labels, labels.cpu().numpy())
-            all_data.append(data)
+            all_data.append(data.cpu())
 
     all_data = torch.cat(all_data, dim=0)
 

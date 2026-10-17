@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
 
 from .augmentations import DataTransform
+from .video import VideoDataset
 
 
 class Load_Dataset(Dataset):
@@ -14,14 +15,19 @@ class Load_Dataset(Dataset):
         super(Load_Dataset, self).__init__()
         self.training_mode = training_mode
 
-        X_train = dataset["samples"]
-        y_train = dataset["labels"]
+        X_train = torch.as_tensor(dataset["samples"])
+        y_train = torch.as_tensor(dataset["labels"]).long()
 
         if len(X_train.shape) < 3:
             X_train = X_train.unsqueeze(2)
 
-        if X_train.shape.index(min(X_train.shape)) != 1:  # make sure the Channels in second dim
+        # MODIFIED: Nhận diện kênh theo cấu hình, không nhầm batch nhỏ với số kênh.
+        if X_train.ndim != 3:
+            raise ValueError("Original backbone requires (N,C,L) time series")
+        if X_train.shape[1] != config.input_channels and X_train.shape[2] == config.input_channels:
             X_train = X_train.permute(0, 2, 1)
+        if X_train.shape[1] != config.input_channels:
+            raise ValueError("Time-series channel count does not match input_channels")
 
         if isinstance(X_train, np.ndarray):
             self.x_data = torch.from_numpy(X_train)
@@ -46,39 +52,38 @@ class Load_Dataset(Dataset):
 
 def data_generator(data_path, configs, training_mode):
     batch_size = configs.batch_size
+    is_video = getattr(configs, "backbone_type", "original") == "dinov3"
+    train_name = "pseudo_train_data" if training_mode == "SupCon" else "train"
+    for percentage in (1, 5, 10, 50, 75):
+        if f"_{percentage}p" in training_mode:
+            train_name = f"train_{percentage}perc"
+            break
 
+    # MODIFIED: Video hỗ trợ manifest JSON hoặc tensor .pt; chuỗi gốc vẫn dùng .pt.
+    def load_split(name, mode):
+        manifest = os.path.join(data_path, name + ".json")
+        if is_video and os.path.isfile(manifest):
+            return VideoDataset(manifest, configs, mode)
+        source = torch.load(os.path.join(data_path, name + ".pt"),
+                            map_location="cpu", weights_only=True)
+        dataset_class = VideoDataset if is_video else Load_Dataset
+        return dataset_class(source, configs, mode)
 
-    if "_1p" in training_mode:
-        train_dataset = torch.load(os.path.join(data_path, "train_1perc.pt"))
-    elif "_5p" in training_mode:
-        train_dataset = torch.load(os.path.join(data_path, "train_5perc.pt"))
-    elif "_10p" in training_mode:
-        train_dataset = torch.load(os.path.join(data_path, "train_10perc.pt"))
-    elif "_50p" in training_mode:
-        train_dataset = torch.load(os.path.join(data_path, "train_50perc.pt"))
-    elif "_75p" in training_mode:
-        train_dataset = torch.load(os.path.join(data_path, "train_75perc.pt"))
-    elif training_mode == "SupCon":
-        train_dataset = torch.load(os.path.join(data_path, "pseudo_train_data.pt"))
-    else:
-        train_dataset = torch.load(os.path.join(data_path, "train.pt"))
-
-    valid_dataset = torch.load(os.path.join(data_path, "val.pt"))
-    test_dataset = torch.load(os.path.join(data_path, "test.pt"))
-
-    train_dataset = Load_Dataset(train_dataset, configs, training_mode)
-    valid_dataset = Load_Dataset(valid_dataset, configs, training_mode)
-    test_dataset = Load_Dataset(test_dataset, configs, training_mode)
-
-    if train_dataset.__len__() < batch_size:
-        batch_size = 16
-
-    train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch_size,
-                                               shuffle=True, drop_last=configs.drop_last, num_workers=0)
-    valid_loader = torch.utils.data.DataLoader(dataset=valid_dataset, batch_size=batch_size,
-                                               shuffle=False, drop_last=configs.drop_last, num_workers=0)
-
-    test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=batch_size,
-                                              shuffle=False, drop_last=False, num_workers=0)
-
+    train_dataset = load_split(train_name, training_mode)
+    valid_dataset = load_split("val", "supervised")
+    test_dataset = load_split("test", "supervised")
+    if not len(train_dataset) or batch_size < 1:
+        raise ValueError("Training data and batch_size must be nonempty/positive")
+    batch_size = min(batch_size, len(train_dataset))
+    contrastive = training_mode in ("self_supervised", "SupCon")
+    if contrastive and batch_size < 2:
+        raise ValueError("Contrastive learning requires at least 2 clips per batch")
+    workers = getattr(configs, "num_workers", 0)
+    # Batch cuối một phần tử không hợp lệ với BatchNorm của projection head TC.
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True,
+                              drop_last=contrastive or configs.drop_last, num_workers=workers)
+    valid_loader = DataLoader(valid_dataset, batch_size=batch_size, shuffle=False,
+                              drop_last=False, num_workers=workers)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False,
+                             drop_last=False, num_workers=workers)
     return train_loader, valid_loader, test_loader

@@ -11,7 +11,7 @@ class TC(nn.Module):
         self.num_channels = configs.final_out_channels
         self.timestep = configs.TC.timesteps
         self.Wk = nn.ModuleList([nn.Linear(configs.TC.hidden_dim, self.num_channels) for i in range(self.timestep)])
-        self.lsoftmax = nn.LogSoftmax()
+        self.lsoftmax = nn.LogSoftmax(dim=1)  # MODIFIED: Nêu rõ chiều các cặp trong batch.
         self.device = device
 
         self.projection_head = nn.Sequential(
@@ -26,16 +26,18 @@ class TC(nn.Module):
 
     def forward(self, z_aug1, z_aug2):
         seq_len = z_aug1.shape[2]
+        if z_aug1.shape != z_aug2.shape or seq_len <= self.timestep:
+            raise ValueError("TC requires matching (B,C,L) views and L > timesteps")
 
         z_aug1 = z_aug1.transpose(1, 2)
         z_aug2 = z_aug2.transpose(1, 2)
 
         batch = z_aug1.shape[0]
-        t_samples = torch.randint(seq_len - self.timestep, size=(1,)).long().to(
-            self.device)  # randomly pick time stamps
+        # MODIFIED: Lấy device/dtype từ tensor để cả CPU và CUDA hoạt động nhất quán.
+        t_samples = torch.randint(seq_len - self.timestep, size=(), device=z_aug1.device).item()
 
         nce = 0  # average over timestep and batch
-        encode_samples = torch.empty((self.timestep, batch, self.num_channels)).float().to(self.device)
+        encode_samples = z_aug2.new_empty((self.timestep, batch, self.num_channels))
 
         for i in np.arange(1, self.timestep + 1):
             encode_samples[i - 1] = z_aug2[:, t_samples + i, :].view(batch, self.num_channels)
@@ -43,7 +45,7 @@ class TC(nn.Module):
 
         c_t = self.seq_transformer(forward_seq)
 
-        pred = torch.empty((self.timestep, batch, self.num_channels)).float().to(self.device)
+        pred = z_aug1.new_empty((self.timestep, batch, self.num_channels))
         for i in np.arange(0, self.timestep):
             linear = self.Wk[i]
             pred[i] = linear(c_t)
