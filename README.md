@@ -1,6 +1,6 @@
 # CA-TCC với DINOv3 cho AI Fitness Coach
 
-Tích hợp **DINOv3 ViT-S/16** vào encoder của CA-TCC để học biểu diễn chuỗi video cho ba lớp **Squat / Push-up / Lunge**. Đây là phần thay backbone theo yêu cầu môn học; chưa thu thập private dataset, tích hợp YOLO Pose, xây dựng giao diện hay deploy.
+Tích hợp **DINOv3 ViT-S/16** vào encoder của CA-TCC để học biểu diễn chuỗi video cho ba lớp **Squat / Push-up / Lunge**. Đây là phần thay backbone.
 
 **Trạng thái:** đã kiểm thử kỹ thuật bằng checkpoint pretrained thật và dữ liệu giả. Chưa có kết quả huấn luyện/đánh giá trên video bài tập thật; không công bố Accuracy hoặc F1-score.
 
