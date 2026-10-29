@@ -1,0 +1,33 @@
+{
+  "synthetic_only": true,
+  "device": "cuda:0",
+  "epochs": 2,
+  "loss_formula": "CE + 0.1 * temporal + 0.1 * SupCon",
+  "loss_history": [
+    {
+      "epoch": 1,
+      "ce": 1.1439800262451172,
+      "temporal": 0.7290087938308716,
+      "contextual": 0.2231752574443817,
+      "total": 1.2391984462738037
+    },
+    {
+      "epoch": 2,
+      "ce": 1.0332934856414795,
+      "temporal": 0.681678295135498,
+      "contextual": 0.2989591956138611,
+      "total": 1.131357192993164
+    }
+  ],
+  "last_block_updated": true,
+  "frozen_prefix_unchanged": true,
+  "adapter_head_tc_gradients": "passed",
+  "checkpoint_roundtrip": "passed",
+  "optimizer_learning_rates": [
+    0.0003,
+    1e-05
+  ],
+  "peak_allocated_mib": 544.74,
+  "cli_initial_and_checkpoint_initialization": "passed",
+  "status": "passed"
+}

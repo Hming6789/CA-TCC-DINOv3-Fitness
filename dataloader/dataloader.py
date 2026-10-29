@@ -75,7 +75,7 @@ def data_generator(data_path, configs, training_mode):
     if not len(train_dataset) or batch_size < 1:
         raise ValueError("Training data and batch_size must be nonempty/positive")
     batch_size = min(batch_size, len(train_dataset))
-    contrastive = training_mode in ("self_supervised", "SupCon")
+    contrastive = training_mode in ("self_supervised", "SupCon", "dinov3_finetune")
     if contrastive and batch_size < 2:
         raise ValueError("Contrastive learning requires at least 2 clips per batch")
     workers = getattr(configs, "num_workers", 0)

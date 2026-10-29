@@ -16,3 +16,10 @@ class Config(HARConfig):
         self.num_classes = len(self.class_names)
         self.batch_size = 2
         self.num_workers = 0
+        # NEW: Fine-tune một block cuối trên GPU 4GB, LR nhỏ hơn adapter/head.
+        self.unfreeze_last_blocks = 1
+        self.backbone_lr = 1e-5
+        self.grad_clip_norm = 1.0
+        self.finetune_ce_weight = 1.0
+        self.finetune_temporal_weight = 0.1
+        self.finetune_context_weight = 0.1

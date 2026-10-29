@@ -24,7 +24,7 @@ parser.add_argument('--experiment_description',     default='HAR_experiments',  
 parser.add_argument('--run_description',            default='test1',            type=str,   help='Experiment Description')
 parser.add_argument('--seed',                       default=0,                  type=int,   help='seed value')
 parser.add_argument('--training_mode',              default='self_supervised',  type=str,
-                    help='Modes of choice: random_init, supervised, self_supervised, SupCon, ft_1p, gen_pseudo_labels')
+                    help='Modes: random_init, supervised, self_supervised, SupCon, ft_1p, gen_pseudo_labels, dinov3_finetune')
 
 parser.add_argument('--selected_dataset',           default='HAR',              type=str,   help='Dataset of choice: EEG, HAR, Epilepsy, pFD')
 parser.add_argument('--data_path',                  default=r'data/',           type=str,   help='Path containing dataset')
@@ -38,6 +38,12 @@ parser.add_argument('--batch_size', type=int, default=None)
 parser.add_argument('--epochs', type=int, default=None)
 parser.add_argument('--frame_batch_size', type=int, default=None)
 parser.add_argument('--data_perc', type=int, default=1, choices=[1, 5, 10, 50, 75])
+parser.add_argument('--init_checkpoint', default=None, help='Checkpoint CA-TCC để fine-tune tiếp')
+parser.add_argument('--unfreeze_last_blocks', type=int, default=1)
+parser.add_argument('--backbone_lr', type=float, default=1e-5)
+parser.add_argument('--ce_weight', type=float, default=1.0)
+parser.add_argument('--temporal_weight', type=float, default=0.1)
+parser.add_argument('--context_weight', type=float, default=0.1)
 args = parser.parse_args()
 print(f'Python: {sys.executable}')
 
@@ -52,6 +58,20 @@ os.makedirs(logs_save_dir, exist_ok=True)
 
 configs = import_module(f'config_files.{data_type}_Configs').Config()
 configs.backbone_type = args.backbone_type or getattr(configs, 'backbone_type', 'original')
+if training_mode == 'dinov3_finetune':
+    if configs.backbone_type != 'dinov3':
+        parser.error('dinov3_finetune requires FitnessVideo / dinov3')
+    if not 1 <= args.unfreeze_last_blocks <= 12 or not np.isfinite(args.backbone_lr) or args.backbone_lr <= 0:
+        parser.error('Require 1 <= unfreeze_last_blocks <= 12 and positive finite backbone_lr')
+    configs.freeze_dinov3 = False
+    configs.unfreeze_last_blocks = args.unfreeze_last_blocks
+    configs.backbone_lr = args.backbone_lr
+    weights = (args.ce_weight, args.temporal_weight, args.context_weight)
+    if not all(np.isfinite(w) and w >= 0 for w in weights) or args.ce_weight <= 0:
+        parser.error('Loss weights must be finite/nonnegative; ce_weight must be > 0')
+    configs.finetune_ce_weight, configs.finetune_temporal_weight, configs.finetune_context_weight = weights
+if args.init_checkpoint and training_mode != 'dinov3_finetune':
+    parser.error('--init_checkpoint is supported by dinov3_finetune')
 if configs.backbone_type == 'dinov3' and data_type != 'FitnessVideo':
     parser.error('Use --selected_dataset FitnessVideo for RGB video input with DINOv3')
 if configs.backbone_type == 'original' and data_type == 'FitnessVideo':
@@ -98,6 +118,13 @@ logger.debug("Data loaded ...")
 # Load Model
 model = base_Model(configs).to(device)
 temporal_contr_model = TC(configs, device).to(device)
+if args.init_checkpoint:
+    checkpoint = torch.load(args.init_checkpoint, map_location='cpu', weights_only=True)
+    if checkpoint.get('video_config', {}).get('class_names') != configs.class_names:
+        parser.error('Checkpoint class mapping must match FitnessVideo configuration')
+    model.load_state_dict(checkpoint['model_state_dict'], strict=True)
+    temporal_contr_model.load_state_dict(checkpoint['temporal_contr_model_state_dict'], strict=True)
+    logger.debug(f'Loaded model and TC from: {args.init_checkpoint}')
 
 if "fine_tune" in training_mode or "ft_" in training_mode:
     # load saved model of this experiment
@@ -181,13 +208,14 @@ if training_mode == "SupCon":
     model.load_state_dict(pretrained_dict)     
     
     
-model_optimizer = torch.optim.Adam((p for p in model.parameters() if p.requires_grad), lr=configs.lr, betas=(configs.beta1, configs.beta2),
+from trainer.trainer import optimizer_groups
+model_optimizer = torch.optim.Adam(optimizer_groups(model, configs), lr=configs.lr, betas=(configs.beta1, configs.beta2),
                                    weight_decay=3e-4)
 
 temporal_contr_optimizer = torch.optim.Adam(temporal_contr_model.parameters(), lr=configs.lr,
                                             betas=(configs.beta1, configs.beta2), weight_decay=3e-4)
 
-if training_mode == "self_supervised" or training_mode == "SupCon":  # to do it only once
+if training_mode in ("self_supervised", "SupCon", "dinov3_finetune"):
     copy_Files(os.path.join(logs_save_dir, experiment_description, run_description), data_type)
 
 # Trainer

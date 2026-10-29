@@ -6,6 +6,8 @@ Tích hợp **DINOv3 ViT-S/16** vào encoder của CA-TCC để học biểu di�
 
 ## 1. Encoder trước và sau thay đổi
 
+**Cập nhật 30/10/2026 — loss và fine-tune DINOv3:** chế độ `dinov3_finetune` mở khóa block cuối ViT, dùng LR backbone riêng và loss `CE + 0.1 × Temporal + 0.1 × SupCon`. Xem [công thức, các file thay đổi và lệnh chạy](docs/DINOV3_FINETUNING.md). Kết quả kiểm thử: [GPU](reports/finetune_gpu.json), [CPU](reports/finetune_cpu.json).
+
 Encoder gốc trong `models/model.py::base_Model` gồm ba khối Conv1d–BatchNorm–ReLU–MaxPool, có Dropout ở khối đầu. Với HAR: đầu vào `(B,9,128)`, features `(B,128,18)`, logits `(B,6)`.
 
 Nhánh mới vẫn dùng `base_Model`, giữ giao diện `forward() -> (logits, features)`:
@@ -23,16 +25,18 @@ Video RGB (B,T,3,H,W), mặc định T=18
          |-- phân loại: flatten -> Linear(C*L,3) -> logits (B,3)
 ```
 
-**TC là nhánh học tương phản trong lúc huấn luyện**, không phải một tầng bắt buộc nằm nối tiếp classification head khi dự đoán. Cấu trúc này giữ đúng cách CA-TCC gốc dùng encoder. Self-supervised/SupCon học adapter và TC; supervised/fine-tune học adapter và classification head. DINOv3 vẫn đóng băng.
+**TC là nhánh học tương phản trong lúc huấn luyện**, không phải một tầng bắt buộc nằm nối tiếp classification head khi dự đoán. Các chế độ cũ giữ DINOv3 đóng băng. Chế độ mới `dinov3_finetune` huấn luyện block cuối DINOv3, adapter, classification head và TC cùng nhau bằng loss kết hợp.
 
 `FitnessVideo_Configs.Config` kế thừa HAR thực tế: `final_out_channels=128`, `features_len=18`, `TC.hidden_dim=100`, `TC.timesteps=6`. Không giả định rằng DINOv3 tự tạo ra đặc trưng 128 chiều. Adapter đọc C/L từ cấu hình; yêu cầu `T >= L > TC.timesteps`. Mặc định T=L nên pooling không đổi chiều thời gian.
 
-DINOv3 dùng `eval()` + `no_grad()`, kể cả sau `model.train()`. GPU dùng autocast FP16 riêng trong backbone đóng băng rồi trả features FP32 cho adapter/TC. CPU chạy FP32. Video và hai view ở CPU; chỉ nhóm frame hiện tại được đưa lên GPU. Bộ tiền xử lý và token CLS theo [tài liệu Transformers](https://huggingface.co/docs/transformers/v4.57.1/en/model_doc/dinov3); checkpoint là [facebook/dinov3-vits16-pretrain-lvd1689m](https://huggingface.co/facebook/dinov3-vits16-pretrain-lvd1689m).
+DINOv3 đóng băng dùng `eval()` + `no_grad()`, kể cả sau `model.train()`; GPU dùng autocast FP16 và trả features FP32. Trong `dinov3_finetune`, các block được chọn nhận gradient FP32, prefix đóng băng vẫn eval. Video và hai view ở CPU; backbone xử lý theo nhóm frame. Bộ tiền xử lý và token CLS theo [tài liệu Transformers](https://huggingface.co/docs/transformers/v4.57.1/en/model_doc/dinov3); checkpoint là [facebook/dinov3-vits16-pretrain-lvd1689m](https://huggingface.co/facebook/dinov3-vits16-pretrain-lvd1689m).
 
 ## 2. Các file đã cập nhật
 
 | File | Class/hàm hoặc phần thay đổi | Mục đích |
 |---|---|---|
+| `models/loss.py` | `DINOv3CATCCLoss` | Kết hợp CE hai view, Temporal Contrasting hai chiều và SupCon; xuất từng thành phần loss |
+| `test_dinov3_finetune.py`, `docs/DINOV3_FINETUNING.md` | Kiểm thử và hướng dẫn fine-tune | Xác nhận trọng số DINOv3 thay đổi, prefix giữ nguyên, checkpoint nạp lại đúng |
 | `models/dinov3.py` — mới | `DINOv3Backbone`, `TemporalAdapter` | Load cache, preprocessing, CLS theo frame, freeze/chunk, chuyển sang (B,C,L) |
 | `models/model.py` | `base_Model.__init__ / forward` | Chọn encoder original/dinov3, giữ CNN và tên tham số checkpoint cũ |
 | `models/TC.py` | `TC.__init__ / forward` | Giữ TC, chỉ rõ chiều LogSoftmax, kiểm tra L, cấp phát theo device/dtype đầu vào |
@@ -136,7 +140,7 @@ Hai view dùng thay đổi độ sáng/tương phản đồng nhất theo clip, 
 python main.py --selected_dataset FitnessVideo --backbone_type dinov3 --training_mode self_supervised --experiment_description FitnessVideo_experiments --run_description dinov3 --device cuda:0 --batch_size 2 --frame_batch_size 2 --epochs 40
 ```
 
-Nếu thiếu VRAM, giảm `--frame_batch_size 1`; giữ batch contrastive ít nhất 2. `freeze_dinov3=True` là mặc định đã kiểm thử. Chế độ mở khóa DINOv3 chưa được đánh giá VRAM/độ ổn định.
+Nếu thiếu VRAM, giảm `--frame_batch_size 1`; giữ batch contrastive ít nhất 2. `freeze_dinov3=True` là mặc định của các chế độ cũ. `dinov3_finetune` đã kiểm thử mở một block cuối với chunk=1; xem báo cáo riêng ở đầu README.
 
 ### Chuỗi semi-supervised CA-TCC
 
@@ -191,7 +195,7 @@ Ngày kiểm thử: **17/10/2026**. Nguồn: [GPU report](reports/smoke_gpu.json
 
 Số bộ nhớ trên là thống kê allocator PyTorch trong tiến trình smoke test chính, không phải toàn bộ VRAM của driver, ứng dụng khác hoặc các tiến trình CLI con. Không xảy ra OOM với cấu hình kiểm thử.
 
-**Chưa kiểm thử:** huấn luyện nhiều epoch trên dataset thật, độ chính xác/F1 thật, YOLO Pose + RGB fusion, dữ liệu lớn, mở khóa backbone, multi-GPU, codec video ngoài AVI giả. Chưa có checkpoint phân loại ba bài tập đủ để dùng thực tế. Smoke test CPU không chạy lại chuỗi CLI nhiều giai đoạn.
+**Chưa kiểm thử:** huấn luyện nhiều epoch trên dataset thật, độ chính xác/F1 thật, YOLO Pose + RGB fusion, dữ liệu lớn, mở toàn bộ backbone, multi-GPU, codec video ngoài AVI giả. Smoke test CPU không chạy lại chuỗi CLI nhiều giai đoạn.
 
 ## 8. Hướng phát triển AI Fitness Coach
 

@@ -21,14 +21,24 @@ class DINOv3Backbone(nn.Module):
         self.feature_dim = self.backbone.config.hidden_size
         if self.feature_dim != 384:
             raise ValueError("This integration requires DINOv3 ViT-S/16 (384 features)")
-        if self.frozen:
-            self.backbone.requires_grad_(False)
-            self.backbone.eval()
+        self.backbone.requires_grad_(False)
+        self.trainable_blocks = 0 if self.frozen else getattr(configs, "unfreeze_last_blocks", 1)
+        if not self.frozen:
+            if not 1 <= self.trainable_blocks <= len(self.backbone.layer):
+                raise ValueError("unfreeze_last_blocks must be between 1 and 12")
+            for block in self.backbone.layer[-self.trainable_blocks:]:
+                block.requires_grad_(True)
+            self.backbone.norm.requires_grad_(True)
+        self.train(self.training)
 
     def train(self, mode=True):
         super().train(mode)
-        if self.frozen:
-            self.backbone.eval()
+        # MODIFIED: Prefix đóng băng luôn eval; chỉ các block cuối được fine-tune.
+        self.backbone.eval()
+        if not self.frozen:
+            for block in self.backbone.layer[-self.trainable_blocks:]:
+                block.train(mode)
+            self.backbone.norm.train(mode)
         return self
 
     def forward(self, video):

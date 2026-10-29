@@ -1,0 +1,31 @@
+{
+  "synthetic_only": true,
+  "device": "cpu",
+  "epochs": 2,
+  "loss_formula": "CE + 0.1 * temporal + 0.1 * SupCon",
+  "loss_history": [
+    {
+      "epoch": 1,
+      "ce": 1.099071979522705,
+      "temporal": 0.7535117864608765,
+      "contextual": 0.09270099550485611,
+      "total": 1.183693289756775
+    },
+    {
+      "epoch": 2,
+      "ce": 0.9857061505317688,
+      "temporal": 0.7203613519668579,
+      "contextual": 0.13952210545539856,
+      "total": 1.0716944932937622
+    }
+  ],
+  "last_block_updated": true,
+  "frozen_prefix_unchanged": true,
+  "adapter_head_tc_gradients": "passed",
+  "checkpoint_roundtrip": "passed",
+  "optimizer_learning_rates": [
+    0.0003,
+    1e-05
+  ],
+  "status": "passed"
+}

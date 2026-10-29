@@ -1,0 +1,67 @@
+{
+  "synthetic_only": true,
+  "python": "3.10.22",
+  "environment": "catcc-dinov3",
+  "torch": "2.9.1+cu126",
+  "device": "cuda:0",
+  "device_name": "NVIDIA GeForce RTX 3050 Laptop GPU",
+  "image_features": [
+    1,
+    384
+  ],
+  "preprocessing_uint8_float": "passed",
+  "video_features": [
+    2,
+    18,
+    384
+  ],
+  "temporal_features": [
+    2,
+    128,
+    18
+  ],
+  "logits": [
+    2,
+    3
+  ],
+  "trainer_modes": [
+    "self_supervised",
+    "SupCon",
+    "supervised"
+  ],
+  "gradients": "passed",
+  "frozen_backbone": "passed",
+  "evaluation": "passed",
+  "max_frame_chunk": 2,
+  "original_backbone": {
+    "logits": [
+      2,
+      6
+    ],
+    "features": [
+      2,
+      128,
+      18
+    ],
+    "backward": "passed"
+  },
+  "gpu_memory_mib": {
+    "peak_allocated": 124.19,
+    "peak_reserved": 132.0,
+    "total": 4095.5
+  },
+  "cli_pipeline": {
+    "stages": [
+      "self_supervised",
+      "ft_1p",
+      "gen_pseudo_labels",
+      "SupCon",
+      "ft_SupCon_1p",
+      "prediction"
+    ],
+    "manifest_decode": "passed",
+    "pseudo_labels_count": 5,
+    "synthetic_only": true
+  },
+  "status": "passed"
+}

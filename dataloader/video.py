@@ -43,7 +43,7 @@ def video_views(clip):
 class VideoDataset(Dataset):
     def __init__(self, source, configs, training_mode):
         self.configs = configs
-        self.contrastive = training_mode in ("self_supervised", "SupCon")
+        self.contrastive = training_mode in ("self_supervised", "SupCon", "dinov3_finetune")
         self.samples = None
         if configs.num_frames < configs.features_len:
             raise ValueError("num_frames must be >= features_len")

@@ -1,5 +1,28 @@
 import numpy as np
 import torch
+import torch.nn.functional as F
+
+
+class DINOv3CATCCLoss(torch.nn.Module):
+    """NEW: Loss downstream kết hợp phân loại, thời gian và ngữ cảnh CA-TCC."""
+    def __init__(self, config, device):
+        super().__init__()
+        self.weights = (config.finetune_ce_weight, config.finetune_temporal_weight,
+                        config.finetune_context_weight)
+        if not all(np.isfinite(w) and w >= 0 for w in self.weights) or self.weights[0] <= 0:
+            raise ValueError("Loss weights must be finite/nonnegative, with CE weight > 0")
+        self.context_loss = SupConLoss(device, temperature=config.Context_Cont.temperature)
+
+    def forward(self, logits1, logits2, labels, temporal1, temporal2, context1, context2):
+        # Hai view cùng nhãn; chuẩn hóa embedding để SupCon không phụ thuộc độ lớn vector.
+        ce = (F.cross_entropy(logits1, labels) + F.cross_entropy(logits2, labels)) / 2
+        temporal = (temporal1 + temporal2) / 2
+        views = torch.stack((F.normalize(context1, dim=-1),
+                             F.normalize(context2, dim=-1)), dim=1)
+        contextual = self.context_loss(views, labels)
+        total = sum(w * value for w, value in zip(self.weights, (ce, temporal, contextual)))
+        return total, {"ce": ce.detach(), "temporal": temporal.detach(),
+                       "contextual": contextual.detach(), "total": total.detach()}
 
 
 class NTXentLoss(torch.nn.Module):
