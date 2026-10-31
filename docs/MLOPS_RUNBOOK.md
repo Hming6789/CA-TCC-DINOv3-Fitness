@@ -58,18 +58,22 @@ Tạo repository `vhm-motion` ở namespace Docker Hub của bạn và chọn Pu
 
 Main tạo `latest` và `sha-<full commit SHA>`. Tag `v1.0.0` tạo version tag và SHA tag; kiểm tra commit thuộc main. Latest chỉ cập nhật trên main. Chỉ tạo release tag sau khi bản build được xác minh. Khi publish thành công, job anonymous pull kiểm tra public access và chạy container theo digest, không phụ thuộc latest có thể thay đổi.
 
-Chưa có namespace hoặc push evidence nên chưa có Docker Hub URL được xác minh. Các lệnh sau là mẫu cấu hình, không phải bằng chứng đã public:
+Repository đã được xác minh Public: [minhstar/vhm-motion](https://hub.docker.com/r/minhstar/vhm-motion).
+Image `minhstar/vhm-motion:v1.0.0` được push từ máy local ngày 31/10/2026.
+Digest: `sha256:17d70e0da5dd620017be2d9fcb344f045ce4db7ae462b806edbb32e56982d7f1`.
+Pull bằng Docker config rỗng đã thành công; `is_private=false` được xác minh qua Docker Hub API.
+Đây là image ứng dụng Preview Mode, không chứa trained classifier.
 
 ```powershell
-$dockerNamespace = Read-Host 'Docker Hub namespace'
-docker login
-docker tag vhm-motion:local "${dockerNamespace}/vhm-motion:v1.0.0"
-docker push "${dockerNamespace}/vhm-motion:v1.0.0"
-docker pull "${dockerNamespace}/vhm-motion:v1.0.0"
-docker run --rm -p 127.0.0.1:8000:8000 "${dockerNamespace}/vhm-motion:v1.0.0"
+docker pull minhstar/vhm-motion:v1.0.0
+docker run --rm -p 127.0.0.1:8000:8000 minhstar/vhm-motion:v1.0.0
 ```
 
 Pull khi còn đăng nhập không tự chứng minh public. Dùng Docker config rỗng hoặc máy khác và pull digest do job ghi lại. Lưu URL run, logs, digest, screenshot trang Public và kết quả boot vào báo cáo. Branch protection nên bắt buộc quality/container; chưa thay đổi settings trên GitHub trong tác vụ này.
+
+Source MLOps được push riêng lên nhánh `codex/mlops-delivery`, không thay đổi `main` hoặc các file nghiên cứu chưa commit. [CI run sau sửa smoke client](https://github.com/Hming6789/CA-TCC-DINOv3-Fitness/actions/runs/41189626714) kiểm tra source commit `9cef5eb828798780966be53be4efeba7554d0f4f`. Lượt đầu thất bại vì urllib vẫn gửi body lớn sau khi server trả 413 sớm; smoke client đã sửa để đọc phản hồi ngay sau Content-Length header. Bounded chunked upload vẫn được kiểm thử riêng.
+
+Automated publish chưa được chạy: nhánh feature không thỏa điều kiện publish và GitHub Actions chưa có `DOCKERHUB_USERNAME`/`DOCKERHUB_TOKEN` tại thời điểm kiểm tra. Sau khi thêm secrets, review/merge nhánh vào main để kích hoạt delivery. Đăng nhập Docker Desktop không tự tạo GitHub Secrets. Không đánh đồng manual push thành công với CD job thành công.
 
 ## 5. Bằng chứng và tái lập
 
