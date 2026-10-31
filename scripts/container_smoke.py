@@ -1,9 +1,11 @@
 """Smoke a running preview container; no trained-model claim or fake scores."""
 import argparse
+import http.client
 import json
 import time
 import urllib.error
 import urllib.request
+from urllib.parse import urlsplit
 
 
 def request(base, path, expected, data=None, headers=None):
@@ -36,8 +38,22 @@ def main():
     body = b'--test\r\nContent-Disposition: form-data; name="file"; filename="invalid.mp4"\r\nContent-Type: video/mp4\r\n\r\ninvalid\r\n--test--\r\n'
     request(args.url, '/api/analyze', 503, body,
             {'Content-Type': 'multipart/form-data; boundary=test'})
-    request(args.url, '/api/analyze', 413, b'x' * (33 * 1024 * 1024),
-            {'Content-Type': 'application/octet-stream'})
+    # The middleware rejects excessive Content-Length before reading the body.
+    # Read that early response instead of racing a 33 MiB send against a closed
+    # socket. Chunked-body enforcement is covered by the integration suite.
+    target = urlsplit(args.url)
+    connection_type = http.client.HTTPSConnection if target.scheme == 'https' else http.client.HTTPConnection
+    connection = connection_type(target.hostname, target.port, timeout=5)
+    try:
+        connection.putrequest('POST', '/api/analyze')
+        connection.putheader('Content-Length', str(33 * 1024 * 1024))
+        connection.putheader('Content-Type', 'application/octet-stream')
+        connection.endheaders()
+        response = connection.getresponse()
+        body = response.read().decode()
+        assert response.status == 413, (response.status, body)
+    finally:
+        connection.close()
     print(json.dumps({'result': 'Passed', 'liveness': 200, 'readiness': 503,
                       'mode': 'preview', 'analysis_without_model': 503,
                       'oversize_upload': 413}))
