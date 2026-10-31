@@ -1,0 +1,11 @@
+# Allowlist: no datasets, credentials, checkpoints or experiment artifacts.
+**
+!Dockerfile
+!requirements-web.txt
+!requirements-web-lock.txt
+!webapp/
+!webapp/__init__.py
+!webapp/app.py
+!webapp/inference.py
+!webapp/static/
+!webapp/static/**

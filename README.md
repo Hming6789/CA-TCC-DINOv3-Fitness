@@ -1,5 +1,45 @@
 # DINOv3 + CA-TCC for Fitness Video Classification
 
+## Docker and CI/CD practical assignment
+
+The CPU web application now has a non-root Dockerfile, a restricted build context,
+separate `/healthz` liveness and `/readyz` model readiness, and a GitHub Actions
+workflow for tests, container smoke/restart checks and Docker Hub delivery.
+The default image remains in **Preview Mode**, because no verified exercise-trained
+classifier package is connected. Docker Hub publication and a successful hosted
+Actions run require actual registry/repository configuration and evidence.
+
+- [Repository audit and verified architecture](docs/MLOPS_AUDIT.md)
+- [Local Docker setup, CI/CD, publishing and reproducibility](docs/MLOPS_RUNBOOK.md)
+- [Model card and limitations](docs/MODEL_CARD.md)
+
+Local verification on 31 October 2026: Windows 9/9 tests passed; Linux CPU
+8 passed and 1 explicitly skipped (PyTorch sampling parity, passed on Windows).
+The locked Docker image built in 85.23 seconds and passed preview, upload-limit,
+non-root, health and restart checks. Workflow syntax/expressions passed actionlint.
+The image is public at [minhstar/vhm-motion](https://hub.docker.com/r/minhstar/vhm-motion)
+with tag `v1.0.0`; anonymous digest pull has been verified. See the
+[hosted CI run](https://github.com/Hming6789/CA-TCC-DINOv3-Fitness/actions/runs/41189626714).
+Publishing was performed locally; automated CD still requires GitHub Actions
+secrets and a main/release push. No recognition accuracy is claimed.
+
+```powershell
+docker build -t vhm-motion:local .
+docker run --rm -p 127.0.0.1:8000:8000 vhm-motion:local
+```
+
+To use the published image:
+
+```powershell
+docker pull minhstar/vhm-motion:v1.0.0
+docker run --rm -p 127.0.0.1:8000:8000 minhstar/vhm-motion:v1.0.0
+```
+
+Open http://localhost:8000. See the runbook for model mounting and scientific
+evaluation requirements. No dataset, checkpoint, token or personal video is
+included in this image. Training remains a separate offline workflow.
+
+
 This project integrates **DINOv3 ViT-S/16** into CA-TCC to learn video representations for three exercise classes: **Squat**, **Push-up**, and **Lunge**. The original CNN encoder remains available for time-series experiments.
 
 The integration has been validated with real pretrained weights and synthetic video inputs. The reports document implementation checks rather than exercise recognition benchmarks.
