@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: vhm-motion
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements-web.txt && python -m webapp.prepare_model
+    startCommand: uvicorn webapp.app:app --host 0.0.0.0 --port $PORT --workers 1 --timeout-keep-alive 5
+    healthCheckPath: /healthz
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.11
+      - key: MODEL_DIR
+        value: model_artifacts
+      - key: INFERENCE_THREADS
+        value: "2"

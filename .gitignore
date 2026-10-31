@@ -27,3 +27,8 @@ experiments_logs/
 *.log
 .venv/
 venv/
+# Exported serving weights, bundles, and local interface validation artifacts.
+model_artifacts/
+*.onnx
+model_artifacts*.zip
+reports/webapp/

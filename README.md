@@ -14,6 +14,17 @@ See the [fine-tuning guide](docs/DINOV3_FINETUNING.md) for the exact objective, 
 
 ## 1. Architecture
 
+### Web application
+
+**VHM Motion** provides a responsive English interface for video upload, local playback, exercise classification, and class probabilities. It runs on FastAPI with CPU ONNX inference and includes a Render Blueprint. Without a trained checkpoint it clearly stays in preview mode.
+
+```bash
+pip install -r requirements-web.txt
+python -m uvicorn webapp.app:app --host 127.0.0.1 --port 8000
+```
+
+Open `http://127.0.0.1:8000`. See [Render deployment and model export](docs/RENDER_DEPLOYMENT.md) for deployment, checkpoint export, and configuration.
+
 ### Original encoder
 
 `models/model.py::base_Model` contains three Conv1d–BatchNorm–ReLU–MaxPool blocks, with Dropout in the first block. Under the HAR configuration:

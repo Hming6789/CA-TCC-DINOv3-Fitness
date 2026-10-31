@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#132923">
+  <meta name="description" content="A focused workspace for fitness video classification with DINOv3 and CA-TCC.">
+  <title>VHM Motion — Video Analysis</title>
+  <link rel="icon" href="/static/mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#workspace">Skip to workspace</a>
+<aside class="sidebar">
+  <a class="brand" href="/" aria-label="VHM Motion home"><span class="brand-icon"><svg viewBox="0 0 28 28" aria-hidden="true"><path d="m4 19 6-11 5 15 4-11 5 7"/></svg></span><span>VHM<span class="brand-light">motion</span></span></a>
+  <div class="workspace-label">YOUR WORKSPACE</div>
+  <nav aria-label="Main navigation">
+    <a class="nav-item active" href="#workspace" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Video analysis<span class="nav-dot"></span></a>
+    <button class="nav-item" id="guide-button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6a3 3 0 0 1 2 1 3 3 0 0 1 2-1h6v15h-6a3 3 0 0 0-2 1 3 3 0 0 0-2-1H4Z"/><path d="M12 5v15"/></svg>Quick guide</button>
+    <a class="nav-item" href="https://www.kaggle.com/datasets/minhhong552/vhm-fitness-motion-60k-synthetic-rgb-and-pose" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 4 16 4 16 0V5M4 12c0 4 16 4 16 0"/></svg>Explore dataset<svg class="external" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 16 8-8M8 8h8v8"/></svg></a>
+  </nav>
+  <div class="sidebar-bottom">
+    <div class="model-mini"><span class="tiny-label">BUILT FOR MOTION</span><strong>One clip. A clearer view.</strong><p>Visual representations, connected through time.</p><div class="mini-signal"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+    <div class="project-label"><span class="project-avatar">V</span><div><strong>VHM Fitness</strong><span>Research workspace</span></div><span class="version">v1.0</span></div>
+  </div>
+</aside>
+<div class="app-shell">
+  <header class="topbar"><div class="breadcrumbs">Workspace <span>/</span> <strong>Video analysis</strong></div><button class="model-pill" id="model-button"><span class="status-dot" id="header-dot"></span><span id="header-status">Connecting</span><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M10 9v5M10 6v.2"/></svg></button></header>
+  <main id="workspace">
+    <section class="page-heading"><div><div class="eyebrow"><span></span> MOVEMENT, IN FOCUS</div><h1>Understand every move<span>.</span></h1><p>Turn a short exercise video into a clear view of your movement.</p></div><span class="architecture-tag"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="3"/><path d="M9 2v4m6-4v4M9 18v4m6-4v4M2 9h4m-4 6h4m12-6h4m-4 6h4"/></svg>DINOv3 <span>×</span> CA-TCC</span></section>
+    <section class="analysis-grid" aria-label="Video analysis workspace">
+      <article class="video-card card">
+        <div class="card-header"><div><span class="section-index">01</span><h2>Your video</h2></div><span class="format-label">MP4 · WebM · MOV</span></div>
+        <div class="video-stage" id="video-stage">
+          <div class="empty-stage" id="empty-stage">
+            <div class="stage-grain"></div><span class="stage-corner corner-tl"></span><span class="stage-corner corner-tr"></span><span class="stage-corner corner-bl"></span><span class="stage-corner corner-br"></span>
+            <div class="stage-label"><span class="stage-live-dot"></span> MOTION STUDIO <span class="stage-dimensions">RGB / TEMPORAL</span></div>
+            <svg class="motion-art" viewBox="0 0 560 300" role="img" aria-label="Illustration of three stages of a squat movement">
+              <defs><linearGradient id="halo" x1="0" x2="1"><stop stop-color="#b8dfc5" stop-opacity=".08"/><stop offset=".5" stop-color="#a6d9bb" stop-opacity=".5"/><stop offset="1" stop-color="#b8dfc5" stop-opacity=".08"/></linearGradient></defs>
+              <ellipse cx="280" cy="240" rx="225" ry="26" fill="url(#halo)"/>
+              <g class="art-grid" stroke="#c4d9cc" stroke-width="1"><path d="M40 245h480M65 265h430M90 285h380M120 240 65 290M200 240l-20 50M280 240v50M360 240l20 50M440 240l55 50"/></g>
+              <g class="ghost-pose" fill="none" stroke="#92b7a0" stroke-linecap="round" stroke-linejoin="round"><circle cx="130" cy="77" r="15" fill="#92b7a0" stroke="none"/><path d="m127 106-6 64 11 31-16 44m5-75 26 30-1 45m-20-126 24 27 29-2" stroke-width="13"/></g>
+              <g fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="m283 129-22 49 38 25-28 42m-10-67-29 26 16 41" stroke="#294b3b" stroke-width="17"/><path d="m282 131 29 25 36-5" stroke="#40634e" stroke-width="14"/><circle cx="293" cy="101" r="18" fill="#294b3b"/><path d="m281 129-20 49" stroke="#294b3b" stroke-width="26"/>
+              <g stroke="#a2dd9c" stroke-width="2"><path d="m282 129-21 49 38 25-28 42m-10-67-29 26 16 41m34-116 29 27 36-5"/><g fill="#c7f5ad" stroke="#294b3b" stroke-width="1.5"><circle cx="282" cy="129" r="5"/><circle cx="261" cy="178" r="5"/><circle cx="299" cy="203" r="5"/><circle cx="271" cy="245" r="5"/><circle cx="232" cy="204" r="5"/><circle cx="248" cy="245" r="5"/><circle cx="311" cy="156" r="5"/><circle cx="347" cy="151" r="5"/></g></g></g>
+              <g class="ghost-pose" fill="none" stroke="#92b7a0" stroke-linecap="round" stroke-linejoin="round"><circle cx="432" cy="77" r="15" fill="#92b7a0" stroke="none"/><path d="m429 106-6 64 11 31-16 44m5-75 26 30-1 45m-20-126 24 27 29-2" stroke-width="13"/></g>
+            </svg>
+            <div class="stage-copy"><strong>Every movement tells a story.</strong><span>Add a video to start yours.</span></div>
+          </div>
+          <video id="video-preview" controls playsinline preload="metadata" hidden aria-label="Your uploaded exercise video"></video>
+          <div id="analysis-overlay" class="analysis-overlay" hidden><span class="scan-line"></span><span class="analyzing-badge"><span class="spinner"></span>Reading your movement</span></div>
+        </div>
+        <input type="file" id="video-file" accept="video/mp4,video/webm,video/quicktime,video/x-msvideo,video/x-matroska,.mp4,.webm,.mov,.avi,.mkv" hidden>
+        <button class="upload-zone" id="upload-zone"><span class="upload-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V3m-5 5 5-5 5 5M4 15v5h16v-5"/></svg></span><span><strong id="upload-title">Drop your video here, or <em>browse files</em></strong><small id="upload-subtitle">One exercise per clip · Up to 30 seconds · 32 MB max</small></span><svg class="upload-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
+        <div class="video-details" id="video-details" hidden><span id="file-meta"></span><button class="text-button" id="remove-video">Remove video</button></div>
+        <div class="action-row"><span class="privacy-note"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6Z"/><path d="m8 12 3 3 5-6"/></svg>Videos are deleted after analysis.</span><button class="primary-button" id="analyze-button" disabled>Analyze movement<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15m-6-6 6 6-6 6"/></svg></button></div>
+        <div class="error-message" id="error-message" role="alert" hidden></div>
+      </article>
+      <article class="results-card card" aria-labelledby="results-heading">
+        <div class="card-header"><div><span class="section-index">02</span><h2 id="results-heading">Motion insights</h2></div><span class="result-state" id="result-state">Awaiting video</span></div>
+        <div class="results-content">
+          <div class="results-idle" id="results-idle"><span class="insight-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="m5 20 7-10 6 15 5-12 4 5"/><circle cx="12" cy="10" r="2"/><circle cx="18" cy="25" r="2"/></svg></span><h3>Ready when you are.</h3><p>Your exercise classification and model probabilities will appear here.</p></div>
+          <div class="prediction" id="prediction" hidden><span class="tiny-label">RECOGNIZED MOVEMENT</span><h3 id="predicted-class"></h3><div class="confidence-line"><span class="confidence-value" id="confidence-value"></span><span>model probability</span></div><p id="prediction-note"></p></div>
+          <div class="distribution"><div class="distribution-heading"><h4>Exercise probability</h4><span id="probability-unit">—</span></div><div id="probability-bars" class="probability-bars"><div class="probability-row"><div><span>Squat</span><strong>—</strong></div><div class="bar-track"><i></i></div></div><div class="probability-row"><div><span>Push-up</span><strong>—</strong></div><div class="bar-track"><i></i></div></div><div class="probability-row"><div><span>Lunge</span><strong>—</strong></div><div class="bar-track"><i></i></div></div></div></div>
+          <div class="result-meta" id="result-meta" hidden><div><span>Frames analyzed</span><strong id="frames-analyzed"></strong></div><div><span>Processing time</span><strong id="processing-time"></strong></div></div>
+          <div class="progress-state" id="progress-state" hidden><div class="progress-track"><i></i></div><div><span id="progress-label">Uploading video</span><button class="text-button" id="cancel-analysis">Cancel</button></div></div>
+          <div class="preview-note" id="preview-note" hidden><span class="small-status-dot"></span><div><strong>Preview workspace</strong><p>Connect a trained model to enable analysis. You can still preview your video.</p></div></div>
+          <div class="result-caption">Exercise recognition · Squat, push-up & lunge</div>
+        </div>
+      </article>
+    </section>
+    <section class="workflow-strip" aria-label="How analysis works"><div><span class="step-number">1</span><span><strong>Upload a short clip</strong><small>Keep your full body in view.</small></span></div><span class="step-line"></span><div><span class="step-number">2</span><span><strong>Let motion connect</strong><small>18 frames, one temporal representation.</small></span></div><span class="step-line"></span><div><span class="step-number">3</span><span><strong>Explore the result</strong><small>See the class and its probabilities.</small></span></div></section>
+    <footer><span>VHM Motion <span class="footer-divider">/</span> A little more clarity in every rep.</span><span>Visual understanding. Temporal context.</span></footer>
+  </main>
+</div>
+<dialog id="info-dialog"><div class="dialog-heading"><h2 id="dialog-title"></h2><button class="icon-button" id="close-dialog" aria-label="Close dialog">×</button></div><div id="dialog-body"></div></dialog>
+<div class="sr-only" role="status" aria-live="polite" id="live-status"></div>
+</body>
+</html>
