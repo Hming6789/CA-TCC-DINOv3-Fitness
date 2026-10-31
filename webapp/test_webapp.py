@@ -76,6 +76,7 @@ class WebAppTests(unittest.TestCase):
             self.assertEqual(client.get("/static/app.js").status_code, 200)
             self.assertEqual(client.post("/api/analyze", files={"file": ("clip.mp4", b"video")}).status_code, 503)
             self.assertEqual(client.get("/healthz").status_code, 200)
+            self.assertEqual(client.get("/readyz").status_code, 503)
 
     def test_onnx_video_api_and_cleanup(self):
         toy_package(self.root)
@@ -83,6 +84,7 @@ class WebAppTests(unittest.TestCase):
         engine = MotionClassifier(self.root)
         with TestClient(create_app(engine)) as client:
             self.assertTrue(client.get("/api/status").json()["ready"])
+            self.assertEqual(client.get("/readyz").status_code, 200)
             seen = []
             original = engine.predict
             def track(video):
@@ -132,6 +134,33 @@ np.testing.assert_allclose(actual / 255.0, expected, atol=1e-7)
         with self.assertLogs("webapp.inference", level="ERROR"):
             engine.load()
         self.assertFalse(engine.ready)
+
+    def test_model_configuration_rejected(self):
+        toy_package(self.root)
+        manifest = self.root / "model.json"
+        original = json.loads(manifest.read_text())
+        for key, value in (("num_frames", 17), ("feature_dim", 768),
+                           ("frame_size", 256), ("class_names", ["Squat"] * 3),
+                           ("purpose", "self_supervised"), ("image_std", [0, 1, 1])):
+            with self.subTest(field=key):
+                manifest.write_text(json.dumps({**original, key: value}))
+                engine = MotionClassifier(self.root)
+                with self.assertLogs("webapp.inference", level="ERROR"):
+                    engine.load()
+                self.assertFalse(engine.ready)
+
+    def test_sampler_shape_order_and_duration(self):
+        path = self.make_video()
+        frames, metadata = sample_video(path)
+        self.assertEqual(frames.shape, (18, 224, 224, 3))
+        self.assertEqual(frames.dtype, np.uint8)
+        self.assertEqual(metadata["sample_indices"], sorted(metadata["sample_indices"]))
+        self.assertEqual(metadata["sample_indices"][0], 0)
+        self.assertEqual(metadata["sample_indices"][-1], 49)
+        with self.assertRaises(ValueError):
+            sample_video(path, num_frames=51)
+        with self.assertRaises(ValueError):
+            sample_video(path, max_duration=1)
 
     def test_chunked_request_is_bounded_before_parser(self):
         async def check():

@@ -93,6 +93,10 @@ def create_app(classifier=None):
     def status():
         return {**engine.status(), "max_upload_mb": 32, "max_duration_seconds": 30}
 
+    @app.get("/readyz")
+    def readiness():
+        return JSONResponse(engine.status(), status_code=200 if engine.ready else 503)
+
     @app.post("/api/analyze")
     async def analyze(file: UploadFile = File(...)):
         temporary = None
